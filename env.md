@@ -1,3 +1,4 @@
 PORT=
 ALLOWED_DOMAINS=
 JWT_SECRET=
+TOKEN=`spheron/storage Token`
