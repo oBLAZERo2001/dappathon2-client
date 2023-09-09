@@ -4,15 +4,17 @@ const FileSchema = new mongoose.Schema(
 	{
 		name: {
 			type: String,
-			// required: true,
 		},
 		description: {
 			type: String,
-			// required: true,
 		},
 		filename: { type: String },
 		contentType: { type: String },
-		data: { type: Buffer },
+		uploadId: { type: String },
+		bucketId: { type: String },
+		protocolLink: { type: String },
+		dynamicLinks: { type: Array },
+		cid: { type: String },
 	},
 	{
 		timestamps: true,

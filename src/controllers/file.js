@@ -1,32 +1,66 @@
+const LitJsSdk = require("@lit-protocol/lit-node-client");
+const { SpheronClient, ProtocolEnum } = require("@spheron/storage");
+const fs = require("fs");
+const { v4: uuidv4 } = require("uuid");
+
 const { File } = require("../models/file");
 const { Counter } = require("../models/count");
+const { signAuthMessage } = require("./utils");
 
-const { SpheronClient, ProtocolEnum } = require("@spheron/storage");
+const chain = "ethereum";
 
-const client = new SpheronClient({ token: process.env.TOKEN });
+const accessControlConditions = [
+	{
+		contractAddress: "",
+		standardContractType: "",
+		chain,
+		method: "eth_getBalance",
+		parameters: [":userAddress", "latest"],
+		returnValueTest: {
+			comparator: ">",
+			value: "0",
+		},
+	},
+];
 
 const uploadFile = async (req, res) => {
 	try {
+		const localFilePath = uuidv4();
 		const { buffer, originalname, mimetype } = req.file;
-		// console.log(buffer, originalname, mimetype);
 		const { name, description } = req.body;
-		const file = new File({
-			data: buffer,
-			filename: originalname,
-			contentType: mimetype,
-			name,
-			description,
+
+		await fs.writeFile(localFilePath, buffer, (err) => {
+			if (err) {
+				console.error(err);
+				return res.status(500).send("Error saving the file.");
+			}
 		});
-		await file.save();
 
 		let currentlyUploaded = 0;
-		console.log(file);
 
-		const { uploadId, bucketId, protocolLink, dynamicLinks } =
-			// await client.upload("C:\\Users\\developer\\Desktop\\data.txt", {
-			await client.upload(buffer, {
-				protocol: ProtocolEnum.IPFS,
-				name,
+		const filePath = localFilePath;
+		const bucketName = "test-bucket-name";
+		const spheronToken = process.env.TOKEN;
+		const walletPrivateKey = process.env.WALLET_PRIVATE_KEY;
+
+		const authSig = await signAuthMessage(walletPrivateKey);
+
+		const client = new LitJsSdk.LitNodeClient({});
+
+		await client.connect();
+
+		const spheron = new SpheronClient({
+			token: spheronToken,
+		});
+
+		const uploadResponse = await spheron.encryptUpload({
+			authSig,
+			accessControlConditions,
+			chain,
+			filePath,
+			litNodeClient: client,
+			configuration: {
+				name: bucketName,
 				onUploadInitiated: (uploadId) => {
 					console.log(`Upload with id ${uploadId} started...`);
 				},
@@ -34,18 +68,31 @@ const uploadFile = async (req, res) => {
 					currentlyUploaded += uploadedSize;
 					console.log(`Uploaded ${currentlyUploaded} of ${totalSize} Bytes.`);
 				},
-			});
+			},
+		});
 
-		console.log(
-			"uploadId:",
-			uploadId,
-			"bucketId:",
-			bucketId,
-			"protocolLink:",
-			protocolLink,
-			"dynamicLinks:",
-			dynamicLinks
-		);
+		console.log(uploadResponse);
+
+		const file = new File({
+			filename: originalname,
+			contentType: mimetype,
+			name,
+			description,
+			uploadId: uploadResponse.uploadId,
+			bucketId: uploadResponse.bucketId,
+			protocolLink: uploadResponse.protocolLink,
+			dynamicLinks: uploadResponse.dynamicLinks,
+			cid: uploadResponse.cid,
+		});
+		await file.save();
+
+		console.log(file);
+
+		await fs.unlink(localFilePath, (err) => {
+			if (err) {
+				console.error(err);
+			}
+		});
 
 		res.status(200).json({ filename: originalname });
 	} catch (error) {
@@ -65,3 +112,17 @@ const getFiles = async (req, res) => {
 };
 
 module.exports = { uploadFile, getFiles };
+
+// const { uploadId, bucketId, protocolLink, dynamicLinks } =
+// 	// await client.upload("C:\\Users\\developer\\Desktop\\data.txt", {
+// 	await client.upload(buffer, {
+// 		protocol: ProtocolEnum.IPFS,
+// 		name,
+// 		onUploadInitiated: (uploadId) => {
+// 			console.log(`Upload with id ${uploadId} started...`);
+// 		},
+// 		onChunkUploaded: (uploadedSize, totalSize) => {
+// 			currentlyUploaded += uploadedSize;
+// 			console.log(`Uploaded ${currentlyUploaded} of ${totalSize} Bytes.`);
+// 		},
+// 	});
