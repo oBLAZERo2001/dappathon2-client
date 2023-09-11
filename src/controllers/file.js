@@ -29,7 +29,7 @@ const uploadFile = async (req, res) => {
 		const { buffer, originalname, mimetype } = req.file;
 		const { name, description } = req.body;
 
-		await fs.writeFile(localFilePath, buffer, (err) => {
+		fs.writeFile(`uplodes/${localFilePath}`, buffer, (err) => {
 			if (err) {
 				console.error(err);
 				return res.status(500).send("Error saving the file.");
@@ -38,12 +38,10 @@ const uploadFile = async (req, res) => {
 
 		let currentlyUploaded = 0;
 
-		const filePath = localFilePath;
-		const bucketName = "test-bucket-name";
+		const filePath = `uplodes/${localFilePath}`;
+		const bucketName = "test-bucket-name-1";
 		const spheronToken = process.env.TOKEN;
 		const walletPrivateKey = process.env.WALLET_PRIVATE_KEY;
-
-		const authSig = await signAuthMessage(walletPrivateKey);
 
 		const client = new LitJsSdk.LitNodeClient({});
 
@@ -52,7 +50,8 @@ const uploadFile = async (req, res) => {
 		const spheron = new SpheronClient({
 			token: spheronToken,
 		});
-
+		console.log("passing");
+		const authSig = await signAuthMessage(walletPrivateKey);
 		const uploadResponse = await spheron.encryptUpload({
 			authSig,
 			accessControlConditions,
@@ -88,11 +87,21 @@ const uploadFile = async (req, res) => {
 
 		console.log(file);
 
-		await fs.unlink(localFilePath, (err) => {
-			if (err) {
-				console.error(err);
-			}
+		// fs.unlink(localFilePath, (err) => {
+		// 	if (err) {
+		// 		console.error(err);
+		// 	}
+		// });
+
+		const decryptedData = spheron.decryptUpload({
+			authSig,
+			ipfsCid: uploadResponse.cid,
+			litNodeClient: client,
 		});
+
+		console.log("!!!!!!!!!!!!!!!");
+		console.log("DECRYPTED DATA", decryptedData);
+		console.log("!!!!!!!!!!!!!!!");
 
 		res.status(200).json({ filename: originalname });
 	} catch (error) {

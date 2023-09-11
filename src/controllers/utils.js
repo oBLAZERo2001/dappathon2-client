@@ -1,5 +1,5 @@
-const siwe = require("siwe");
 const { Wallet, verifyMessage } = require("ethers");
+const siwe = require("siwe");
 
 const domain = "localhost";
 const origin = "https://localhost/login";

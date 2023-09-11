@@ -16,26 +16,26 @@ require("./database/mongoose");
 // Bootstrap models
 const models = path.join(__dirname, "models");
 fs.readdirSync(models)
-  .filter((file) => ~file.search(/^[^.].*\.js$/))
-  .forEach((file) => require(path.join(models, file)));
+	.filter((file) => ~file.search(/^[^.].*\.js$/))
+	.forEach((file) => require(path.join(models, file)));
 
 // CORS
 app.use(function (req, res, next) {
-  //   var allowedDomains = process.env.ALLOWED_DOMAINS.split(" ");
-  //   var origin = req.headers.origin;
-  //   console.log(origin, allowedDomains, allowedDomains.indexOf(origin));
-  //   if (allowedDomains.indexOf(origin) > -1) {
-  // }
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Methods",
-    " GET, POST, PATCH, PUT, DELETE, OPTIONS"
-  );
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-  );
-  next();
+	//   var allowedDomains = process.env.ALLOWED_DOMAINS.split(" ");
+	//   var origin = req.headers.origin;
+	//   console.log(origin, allowedDomains, allowedDomains.indexOf(origin));
+	//   if (allowedDomains.indexOf(origin) > -1) {
+	// }
+	res.setHeader("Access-Control-Allow-Origin", "*");
+	res.header(
+		"Access-Control-Allow-Methods",
+		" GET, POST, PATCH, PUT, DELETE, OPTIONS"
+	);
+	res.header(
+		"Access-Control-Allow-Headers",
+		"Origin, X-Requested-With, Content-Type, Accept, Authorization"
+	);
+	next();
 });
 app.use(express.json());
 
@@ -45,14 +45,14 @@ const { routes } = require("./routes");
 app.use(routes);
 
 app.get("/", (req, res) => {
-  res.send({ message: "🍑🍆💦" });
+	res.send({ message: "🍑🍆💦" });
 });
 
 app.use("*", (req, res) => {
-  res.status(404).send({ message: "Invalid API route!" });
+	res.status(404).send({ message: "Invalid API route!" });
 });
 
 const port = process.env.PORT || 3000;
 http.listen(port, () => {
-  console.log("Server running on port " + port);
+	console.log("Server running on port " + port);
 });
